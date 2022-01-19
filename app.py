@@ -30,13 +30,13 @@ def deleteImage():
         return jsonify({'msg': "please enter userID"})
     # delete in all in all folder
     if not 'classID' in content:
-        count = deleteFromTrainFolder(classID="", userID=content["userID"])
+        count = deleteFromTrainFolder(userID=content["userID"])
         return jsonify({'msg': "Deleted "+str(count)+" train Image from user " + content["userID"]})
     if 'imgName' in content:
         count = deleteFromTrainFolder(
-            classID=content['classID'], userID=content["userID"], imgName=content['imgName'])
+            classID=content['classID'], imgName=content['imgName'])
         return jsonify({'msg': "Deleted "+str(count)+" train Image from user " + content["userID"]})
-    # clear all train of userID in class
+    # delete all train userID Images in class
     count = deleteFromTrainFolder(
         classID=content['classID'], userID=content["userID"])
     return jsonify({'msg': "successfully deleted " + str(count) + " train Image from user " + content["userID"]})
@@ -45,35 +45,56 @@ def deleteImage():
 @app.route('/user-train-image', methods=['POST', 'GET'])
 def ResolveTrainImage():
     # print(request.json)
-    content = request.json
     if request.method == "POST":
-        if('classID' in content):
+        content = request.json
+        if not ('userID' in content):
+            return jsonify({'msg': 'please enter userID'})
+        if 'classID' in content:
+            # remove / from folder name
             foldername = str(content['classID']).replace("/", "")
+            # concat folder path
             app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER.split(
                 "/")[0]+"/"+foldername
             if not os.path.exists(app.config['UPLOAD_FOLDER']):
                 os.makedirs(app.config['UPLOAD_FOLDER'])
-        imgdata = base64.b64decode(content['imgbase64'])
+        userID = str(content['userID']).replace("/", "")
+        imgdata = ""
+        try:
+            imgdata = base64.b64decode(content['imgbase64'])
+        except:
+            return jsonify({'msg': 'wrong base64 format'})
         path = uniquify(os.path.join(
-            app.config['UPLOAD_FOLDER'], content['userID']+".jpg"))
+            app.config['UPLOAD_FOLDER'], userID+".jpg"))
         with open(path, 'wb') as f:
             f.write(imgdata)
-        return jsonify({'msg': 'successfully added train image!'})
+        return jsonify({'msg': 'successfully added train image! for user '+userID})
     if request.method == 'GET':
-        jsonData = {}
-        if not "userID" in content:
+        jsonData = []
+        userID = request.args.get('userID')
+        classID = request.args.get('classID')
+        if request.args.get('userID') is None and request.args.get('classID') is None:
+            return jsonify({'msg': "please enter userID or classID"})
+        elif request.args.get('classID') is None:
             jsonData = getImgFromTrainFolder(
-                userID="donal numb", classID="IS1402")
-        jsonData = getImgFromTrainFolder(
-            userID=content["userID"], classID=content["classID"])
+                userID=str(userID))
+        elif request.args.get('userID') is None:
+            jsonData = getImgFromTrainFolder(
+                classID=str(classID))
+        else:
+            jsonData = getImgFromTrainFolder(
+                str(classID), str(userID))
         return jsonData
 
 
 @app.route('/recongize-user-image', methods=['POST'])
-def processImage():
+def processRecognizeImage():
     # print(request.json)
     content = request.json
-    b64img = base64.b64decode(content['imgbase64'])
+    b64img = ""
+    try:
+        b64img = base64.b64decode(content['imgbase64'])
+    except:
+        return jsonify({'msg': "wrong 64 format"})
     npimg = np.fromstring(b64img, dtype=np.uint8)
     if('classID' in content):
         return classify_face(npimg, classID=content['classID'])

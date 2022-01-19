@@ -11,19 +11,17 @@ TOLERANCE = 0.6
 TRAIN_ALL_FOLDER = "./model_faces/ALL/"
 
 
-def get_encoded_faces(classID=""):
+def get_encoded_faces(classID="ALL"):
     """
     looks through the faces folder and encodes all
     the faces
 
     :return: dict of (name, image encoded)
     """
-    pathToGetEncoded = TRAIN_ALL_FOLDER
     encoded = {}
-    if(classID):
-        pathToGetEncoded = "./model_faces/"+classID+"/"
-        if(not os.path.exists(pathToGetEncoded)):
-            pathToGetEncoded = TRAIN_ALL_FOLDER
+    pathToGetEncoded = "./model_faces/"+classID+"/"
+    if(not os.path.exists(pathToGetEncoded)):
+        pathToGetEncoded = TRAIN_ALL_FOLDER
 
     for dirpath, dnames, fnames in os.walk(pathToGetEncoded):
         for f in fnames:
@@ -114,12 +112,10 @@ def uniquify(path):
     return path
 
 
-def deleteFromTrainFolder(classID="", userID="", imgName=""):
+def deleteFromTrainFolder(classID="ALL", userID="", imgName=""):
     count = 0
     try:
-        folder = TRAIN_ALL_FOLDER
-        if classID:
-            folder = "./model_faces/"+classID
+        folder = "./model_faces/"+classID
         if(not os.path.exists(folder)):
             return count
         if imgName:
@@ -136,7 +132,7 @@ def deleteFromTrainFolder(classID="", userID="", imgName=""):
     return 0
 
 
-def getImgFromTrainFolder(classID="", userID=""):
+def getImgFromTrainFolder(classID="ALL", userID=""):
     folder = "./model_faces/"+classID
     imgList = []
     if(not os.path.exists(folder)):
