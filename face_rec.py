@@ -56,6 +56,7 @@ def classify_face(im, classID=""):
 
     # img = cv2.imread(im, 1)
     img = cv2.imdecode(im, 1)
+    img = resizeImage(img)
     #img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
     #img = img[:,:,::-1]
 
@@ -78,17 +79,17 @@ def classify_face(im, classID=""):
             name = known_face_names[best_match_index]
 
         face_names.append(name)
-        for (top, right, bottom, left), name in zip(face_locations, face_names):
-            # Draw a box around the face
-            cv2.rectangle(img, (left-20, top-20),
-                          (right+20, bottom+20), (255, 0, 0), 2)
+        # for (top, right, bottom, left), name in zip(face_locations, face_names):
+        #     # Draw a box around the face
+        #     cv2.rectangle(img, (left-20, top-20),
+        #                   (right+20, bottom+20), (255, 0, 0), 2)
 
-            # Draw a label with a name below the face
-            cv2.rectangle(img, (left-20, bottom - 15),
-                          (right+20, bottom+20), (255, 0, 0), cv2.FILLED)
-            font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(img, name, (left - 20, bottom + 15),
-                        font, 1.0, (255, 255, 255), 2)
+        #     # Draw a label with a name below the face
+        #     cv2.rectangle(img, (left-20, bottom - 15),
+        #                   (right+20, bottom+20), (255, 0, 0), cv2.FILLED)
+        #     font = cv2.FONT_HERSHEY_DUPLEX
+        #     cv2.putText(img, name, (left - 20, bottom + 15),
+        #                 font, 1.0, (255, 255, 255), 2)
     # convert data to json
     json_data = getRecognitionData(face_locations, face_names)
     # print(json_data)
@@ -99,6 +100,23 @@ def classify_face(im, classID=""):
     #     if cv2.waitKey(1) & 0xFF == ord('q'):
     #         return  json_data
     return json_data
+
+
+def resizeImage(img):
+    height, width = img.shape[:2]
+    max_height = 900
+    max_width = 600
+
+    # only shrink if img is bigger than required
+    if max_height < height or max_width < width:
+        # get scaling factor
+        scaling_factor = max_height / float(height)
+        if max_width/float(width) < scaling_factor:
+            scaling_factor = max_width / float(width)
+        # resize image
+        img = cv2.resize(img, None, fx=scaling_factor,
+                         fy=scaling_factor, interpolation=cv2.INTER_AREA)
+    return img
 
 
 def uniquify(path):
