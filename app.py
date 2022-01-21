@@ -82,7 +82,7 @@ def ResolveTrainImage():
                 classID=str(classID))
         else:
             jsonData = getImgFromTrainFolder(
-                str(classID), str(userID))
+                classID=str(classID), userID=str(userID))
         return jsonData
 
 

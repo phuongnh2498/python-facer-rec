@@ -142,6 +142,7 @@ def getImgFromTrainFolder(classID="ALL", userID=""):
             if(userID in file):
                 with open(os.path.join(subdir, file), "rb") as image_file:
                     encoded_string = base64.b64encode(image_file.read())
+                    print("please:"+str(encoded_string))
                     tempData = dict(
                         {"imgName": str(file), "imgbase64": str(encoded_string)})
                     imgList.append(tempData)
