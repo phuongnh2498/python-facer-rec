@@ -1,4 +1,5 @@
 import base64
+from itertools import count
 import face_recognition as fr
 import os
 import cv2
@@ -32,12 +33,13 @@ def get_encoded_faces(classID="ALL"):
     return encoded
 
 
-def unknown_image_encoded(img):
+def check_unknown_image_encoded(im):
     """
     encode a face given the file name
     """
-    face = fr.load_image_file("faces/" + img)
-    encoding = fr.face_encodings(face)[0]
+    img = cv2.imdecode(im, 1)
+    img = resizeImage(img)
+    encoding = True if len(fr.face_locations(img))>0 else False
 
     return encoding
 

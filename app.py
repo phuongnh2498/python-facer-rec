@@ -6,7 +6,7 @@ import base64
 import numpy as np
 import os
 from flask_cors import CORS
-from face_rec import classify_face, uniquify, deleteFromTrainFolder, getImgFromTrainFolder
+from face_rec import classify_face, check_unknown_image_encoded, uniquify, deleteFromTrainFolder, getImgFromTrainFolder
 # Post Folder
 UPLOAD_FOLDER = 'model_faces/ALL'
 
@@ -49,6 +49,14 @@ def ResolveTrainImage():
         content = request.json
         if not ('userID' in content):
             return jsonify({'msg': 'please enter userID'})
+        imgdata = ""
+        try:
+            imgdata = base64.b64decode(content['imgbase64'])
+        except:
+            return jsonify({'msg': 'wrong base64 format'})
+        npimg = np.fromstring(imgdata, dtype=np.uint8)
+        if not check_unknown_image_encoded(npimg):
+            return jsonify({'msg': "can't detect face in image"})
         if 'classID' in content:
             # remove / from folder name
             foldername = str(content['classID']).replace("/", "")
@@ -58,11 +66,7 @@ def ResolveTrainImage():
             if not os.path.exists(app.config['UPLOAD_FOLDER']):
                 os.makedirs(app.config['UPLOAD_FOLDER'])
         userID = str(content['userID']).replace("/", "")
-        imgdata = ""
-        try:
-            imgdata = base64.b64decode(content['imgbase64'])
-        except:
-            return jsonify({'msg': 'wrong base64 format'})
+        
         path = uniquify(os.path.join(
             app.config['UPLOAD_FOLDER'], userID+".jpg"))
         with open(path, 'wb') as f:
@@ -103,5 +107,5 @@ def processRecognizeImage():
 
 # Run server
 if(__name__ == '__main__'):
-    port = os.environ.get("PORT", 5000)
+    port = os.environ.get("PORT", 8000)
     app.run(debug=False, host='0.0.0.0', port=port)
