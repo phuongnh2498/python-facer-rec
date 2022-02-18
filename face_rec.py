@@ -25,8 +25,11 @@ def get_encoded_faces(classID="ALL"):
     for dirpath, dnames, fnames in os.walk(pathToGetEncoded):
         for f in fnames:
             if f.endswith(".jpg") or f.endswith(".png"):
+                print("loading image file...")
                 face = fr.load_image_file(pathToGetEncoded + f)
+                print("encoding image file...")
                 encoding = fr.face_encodings(face)[0]
+                print("Finish 1 image file...")
                 encoded[f.split(".")[0]] = encoding
     return encoded
 
@@ -50,16 +53,18 @@ def classify_face(im, classID="", tolerance=0.6):
     :param im: str of file path
     :return: list of face names
     """
+    print("getting encoded faces...")
     faces = get_encoded_faces(classID)
     faces_encoded = list(faces.values())
     known_face_names = list(faces.keys())
 
     # img = cv2.imread(im, 1)
-    img = cv2.imdecode(im, 1)
+    print("decoding...")
+    img = cv2.imdecode(im,  cv2.IMREAD_UNCHANGED)
     img = resizeImage(img)
     #img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
     #img = img[:,:,::-1]
-
+    print("getting faces...")
     face_locations = fr.face_locations(img)
     unknown_face_encodings = fr.face_encodings(
         img, face_locations)
@@ -92,6 +97,7 @@ def classify_face(im, classID="", tolerance=0.6):
         #                 font, 1.0, (255, 255, 255), 2)
     # convert data to json
     json_data = getRecognitionData(face_locations, face_names)
+    print(json_data)
     # print(json_data)
     # return json_data
     # Display the resulting image

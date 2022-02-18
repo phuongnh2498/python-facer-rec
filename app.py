@@ -46,16 +46,15 @@ def deleteImage():
 def ResolveTrainImage():
     # print(request.json)
     if request.method == "POST":
-        content = request.json
-        print(content)
+        content = dict(request.form)
+
+        if not 'ImageFile' in request.files:
+            return jsonify({'msg': 'please select an ImageFile'})
         if not ('userID' in content):
             return jsonify({'msg': 'please enter userID'})
-        imgdata = ""
-        try:
-            imgdata = base64.b64decode(content['imgbase64'])
-        except:
-            return jsonify({'msg': 'wrong base64 format'})
-        npimg = np.fromstring(imgdata, dtype=np.uint8)
+
+        imgFile = request.files['ImageFile']
+        npimg = np.fromstring(imgFile.read(), np.uint8)
 
         if not check_unknown_image_encoded(npimg):
             return jsonify({'msg': "can't detect face in image"})
@@ -68,11 +67,10 @@ def ResolveTrainImage():
             if not os.path.exists(app.config['UPLOAD_FOLDER']):
                 os.makedirs(app.config['UPLOAD_FOLDER'])
         userID = str(content['userID']).replace("/", "")
-
         path = uniquify(os.path.join(
             app.config['UPLOAD_FOLDER'], userID+".jpg"))
         with open(path, 'wb') as f:
-            f.write(imgdata)
+            f.write(npimg)
         return jsonify({'msg': 'successfully added train image! for user '+userID})
     if request.method == 'GET':
         jsonData = []
@@ -94,22 +92,14 @@ def ResolveTrainImage():
 
 @app.route('/recongize-user-image', methods=['POST'])
 def processRecognizeImage():
-    # print(request.json)
-    content = request.json
-    b64img = ""
+    content = dict(request.form)
     tolerance = 0.6
-
-    print(request.files)
-    try:
-        b64img = base64.b64decode()
-    except:
-        return jsonify({'msg': "wrong 64 format"})
-    npimg = np.fromstring(b64img, dtype=np.uint8)
+    npimg = np.fromstring(request.files['ImageFile'].read(), np.uint8)
     if('tolerance' in content):
         tolerance = float(content["tolerance"])
     if('classID' in content):
         return classify_face(npimg, classID=content['classID'], tolerance=tolerance)
-    return classify_face(npimg, tolerance=tolerance)
+    return jsonify({'msg': 'wrong base64 format'})
 
 
 # Run server
