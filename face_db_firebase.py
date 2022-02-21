@@ -4,6 +4,7 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 import numpy as np
 import pickle
+from datetime import date
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
@@ -21,6 +22,7 @@ def addNewModel(encoded_face_arr=[], face_name="test--xyz", folder="test", image
         "folder": folder,
         "image_url": image_url,
         "image_id": image_id,
+        "date_added": str(date.today())
     }
     face_model_collection.add(face_model)
     print("done!")

@@ -52,8 +52,8 @@ def user_train_image():
             return jsonify({'msg': 'please enter user_id'})
 
         image_file = request.files['image_file']
-        user_id = str(content['user_id']).replace("/", "")
-        image_folder = str(content['image_folder']).replace("/", "")
+        user_id = str(content['user_id']).replace("/", "").upper()
+        image_folder = str(content['image_folder']).replace("/", "").upper()
         # check if face in image
         npimg = np.frombuffer(image_file.read(), np.uint8)
         if not check_unknown_image_encoded(npimg):
@@ -79,7 +79,7 @@ def user_train_image():
     if request.method == 'GET':
         if request.args.get('user_id') is None:
             return jsonify({'msg': "please enter user_id or folder"})
-        userID = request.args.get('user_id')
+        userID = request.args.get('user_id').upper()
         print("For user id" + userID)
         return json.dumps(getModelByFolderForMobile(folder=userID))
 
@@ -96,7 +96,7 @@ def processRecognizeImage():
         tolerance = float(content["tolerance"])
 
     # get faces from firebase
-    face_dict = getModelByFolder(folder=content['folder'])
+    face_dict = getModelByFolder(folder=content['folder'].upper())
     npimg = np.fromstring(request.files['image_file'].read(), np.uint8)
 
     return classify_face(npimg, tolerance=tolerance, faces_model=face_dict)
