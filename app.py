@@ -1,12 +1,16 @@
 from pickle import TRUE
-from xml.etree.ElementTree import tostring
 from flask import Flask, request, jsonify
-from werkzeug.utils import secure_filename
-import base64
+import json
 import numpy as np
+import copy
+import io
+import PIL.Image as Image
 import os
 from flask_cors import CORS
-from face_rec import classify_face, check_unknown_image_encoded, uniquify, deleteFromTrainFolder, getImgFromTrainFolder
+from sqlalchemy import true
+from face_db_firebase import addNewModel, deleteModelByImageID, getModelByFolder, getModelByFolderForMobile
+from face_rec import classify_face, check_unknown_image_encoded, get_encoded_face, uniquify, deleteFromTrainFolder, getImgFromTrainFolder
+from imagekit import deleteImageByID, uploadImage
 # Post Folder
 UPLOAD_FOLDER = 'model_faces/ALL'
 
@@ -25,81 +29,77 @@ def get():
 @app.route('/delete-user-train-image', methods=['POST'])
 def deleteImage():
     content = request.json
-    count = 0
-    if not 'userID' in content:
-        return jsonify({'msg': "please enter userID"})
-    # delete in all in all folder
-    if not 'classID' in content:
-        count = deleteFromTrainFolder(userID=content["userID"])
-        return jsonify({'msg': "Deleted "+str(count)+" train Image from user " + content["userID"]})
-    if 'imgName' in content:
-        count = deleteFromTrainFolder(
-            classID=content['classID'], imgName=content['imgName'])
-        return jsonify({'msg': "Deleted "+str(count)+" train Image from user " + content["userID"]})
-    # delete all train userID Images in class
-    count = deleteFromTrainFolder(
-        classID=content['classID'], userID=content["userID"])
-    return jsonify({'msg': "successfully deleted " + str(count) + " train Image from user " + content["userID"]})
+    image_id = content['image_id']
+    if not 'image_id' in content:
+        return jsonify({'msg': "please enter image_id"})
+    # delete image from firebase
+    deleteModelByImageID(image_id=image_id)
+    # delete image from imagekit
+    deleteImageByID(image_id=image_id)
+    return jsonify({'msg': "successfully deleted " + image_id})
 
 
 @app.route('/user-train-image', methods=['POST', 'GET'])
-def ResolveTrainImage():
-    # print(request.json)
+def user_train_image():
     if request.method == "POST":
         content = dict(request.form)
 
-        if not 'ImageFile' in request.files:
-            return jsonify({'msg': 'please select an ImageFile'})
-        if not ('userID' in content):
-            return jsonify({'msg': 'please enter userID'})
+        if not ('image_folder' in content):
+            return jsonify({'msg': 'please enter image_folder'})
+        if not 'image_file' in request.files:
+            return jsonify({'msg': 'please select an image_file'})
+        if not ('user_id' in content):
+            return jsonify({'msg': 'please enter user_id'})
 
-        imgFile = request.files['ImageFile']
-        npimg = np.fromstring(imgFile.read(), np.uint8)
-
+        image_file = request.files['image_file']
+        user_id = str(content['user_id']).replace("/", "")
+        image_folder = str(content['image_folder']).replace("/", "")
+        # check if face in image
+        npimg = np.frombuffer(image_file.read(), np.uint8)
         if not check_unknown_image_encoded(npimg):
             return jsonify({'msg': "can't detect face in image"})
-        if 'classID' in content:
-            # remove / from folder name
-            foldername = str(content['classID']).replace("/", "")
-            # concat folder path
-            app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER.split(
-                "/")[0]+"/"+foldername
-            if not os.path.exists(app.config['UPLOAD_FOLDER']):
-                os.makedirs(app.config['UPLOAD_FOLDER'])
-        userID = str(content['userID']).replace("/", "")
-        path = uniquify(os.path.join(
-            app.config['UPLOAD_FOLDER'], userID+".jpg"))
-        with open(path, 'wb') as f:
-            f.write(npimg)
-        return jsonify({'msg': 'successfully added train image! for user '+userID})
+        # upload imagekit
+        res_imgkit = uploadImage(imageFile=io.BytesIO(npimg),
+                                 imageName=user_id,
+                                 folder=image_folder)
+        # fetch response imagekit
+        model_face_name = user_id+"--"+res_imgkit['fileId']
+        model_image_url = res_imgkit['thumbnailUrl']
+        # get encoded face arr
+        encoded_arr = get_encoded_face(image_file=io.BytesIO(npimg))
+        # post to firebase
+        fire_res = addNewModel(encoded_face_arr=encoded_arr,
+                               face_name=model_face_name,
+                               folder=image_folder,
+                               image_url=model_image_url,
+                               image_id=res_imgkit['fileId']
+                               )
+        print(fire_res)
+        return jsonify({'msg': 'successfully added train image! for user '+user_id})
     if request.method == 'GET':
-        jsonData = []
-        userID = request.args.get('userID')
-        classID = request.args.get('classID')
-        if request.args.get('userID') is None and request.args.get('classID') is None:
-            return jsonify({'msg': "please enter userID or classID"})
-        elif request.args.get('classID') is None:
-            jsonData = getImgFromTrainFolder(
-                userID=str(userID))
-        elif request.args.get('userID') is None:
-            jsonData = getImgFromTrainFolder(
-                classID=str(classID))
-        else:
-            jsonData = getImgFromTrainFolder(
-                str(classID), str(userID))
-        return jsonData
+        if request.args.get('user_id') is None:
+            return jsonify({'msg': "please enter user_id or folder"})
+        userID = request.args.get('user_id')
+        print("For user id" + userID)
+        return json.dumps(getModelByFolderForMobile(folder=userID))
 
 
-@app.route('/recongize-user-image', methods=['POST'])
+@ app.route('/recongize-user-image', methods=['POST'])
 def processRecognizeImage():
     content = dict(request.form)
     tolerance = 0.6
-    npimg = np.fromstring(request.files['ImageFile'].read(), np.uint8)
-    if('tolerance' in content):
+    if not 'image_file' in request.files:
+        return jsonify({'msg': 'wrong request format'})
+    if not 'folder' in content:
+        return jsonify({'msg': 'wrong request format'})
+    if 'tolerance' in content:
         tolerance = float(content["tolerance"])
-    if('classID' in content):
-        return classify_face(npimg, classID=content['classID'], tolerance=tolerance)
-    return jsonify({'msg': 'wrong base64 format'})
+
+    # get faces from firebase
+    face_dict = getModelByFolder(folder=content['folder'])
+    npimg = np.fromstring(request.files['image_file'].read(), np.uint8)
+
+    return classify_face(npimg, tolerance=tolerance, faces_model=face_dict)
 
 
 # Run server
