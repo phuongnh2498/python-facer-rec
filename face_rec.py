@@ -1,15 +1,19 @@
 import base64
-from itertools import count
 import face_recognition as fr
 import os
 import cv2
-import face_recognition
 import numpy as np
 import json
 from time import sleep
 
 TOLERANCE = 0.6
 TRAIN_ALL_FOLDER = "./model_faces/ALL/"
+
+
+def get_encoded_face(image_file=None):
+    face = fr.load_image_file(image_file)
+    encoding = fr.face_encodings(face)[0]
+    return encoding
 
 
 def get_encoded_faces(classID="ALL"):
@@ -27,80 +31,61 @@ def get_encoded_faces(classID="ALL"):
     for dirpath, dnames, fnames in os.walk(pathToGetEncoded):
         for f in fnames:
             if f.endswith(".jpg") or f.endswith(".png"):
+                print("loading image file...")
                 face = fr.load_image_file(pathToGetEncoded + f)
+                print("encoding image file...")
                 encoding = fr.face_encodings(face)[0]
+                print("Finish 1 image file...")
                 encoded[f.split(".")[0]] = encoding
+    print(encoded)
     return encoded
 
 
-def check_unknown_image_encoded(im):
-    """
-    encode a face given the file name
-    """
+def check_unknown_image_encoded(im=None):
+    print("im")
+    print(im)
+    if im == []:
+        im = []
     img = cv2.imdecode(im, 1)
     img = resizeImage(img)
-    encoding = True if len(fr.face_locations(img))>0 else False
+    encoding = True if len(fr.face_locations(img)) > 0 else False
 
     return encoding
 
 
-def classify_face(im, classID=""):
-    """
-    will find all of the faces in a given image and label
-    them if it knows what they are
+def classify_face(im, tolerance=0.6, faces_model={}):
+    print("decoding...")
+    img = cv2.imdecode(im,  cv2.IMREAD_UNCHANGED)
+    # img = resizeImage(img)
+    #img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
+    print("getting faces...")
+    face_locations = fr.face_locations(img)
+    unknown_face_encodings = fr.face_encodings(
+        img, face_locations)
 
-    :param im: str of file path
-    :return: list of face names
-    """
-    faces = get_encoded_faces(classID)
+    print("getting encoded faces...")
+
+    faces = faces_model
     faces_encoded = list(faces.values())
     known_face_names = list(faces.keys())
-
-    # img = cv2.imread(im, 1)
-    img = cv2.imdecode(im, 1)
-    img = resizeImage(img)
-    #img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
-    #img = img[:,:,::-1]
-
-    face_locations = face_recognition.face_locations(img)
-    unknown_face_encodings = face_recognition.face_encodings(
-        img, face_locations)
 
     face_names = []
     for face_encoding in unknown_face_encodings:
         # See if the face is a match for the known face(s)
-        matches = face_recognition.compare_faces(
-            faces_encoded, face_encoding, tolerance=TOLERANCE)
+        matches = fr.compare_faces(
+            faces_encoded, face_encoding, tolerance=tolerance)
         name = "Unknown"
 
         # use the known face with the smallest distance to the new face
-        face_distances = face_recognition.face_distance(
+        face_distances = fr.face_distance(
             faces_encoded, face_encoding)
         best_match_index = np.argmin(face_distances)
         if matches[best_match_index]:
             name = known_face_names[best_match_index]
 
         face_names.append(name)
-        # for (top, right, bottom, left), name in zip(face_locations, face_names):
-        #     # Draw a box around the face
-        #     cv2.rectangle(img, (left-20, top-20),
-        #                   (right+20, bottom+20), (255, 0, 0), 2)
-
-        #     # Draw a label with a name below the face
-        #     cv2.rectangle(img, (left-20, bottom - 15),
-        #                   (right+20, bottom+20), (255, 0, 0), cv2.FILLED)
-        #     font = cv2.FONT_HERSHEY_DUPLEX
-        #     cv2.putText(img, name, (left - 20, bottom + 15),
-        #                 font, 1.0, (255, 255, 255), 2)
-    # convert data to json
     json_data = getRecognitionData(face_locations, face_names)
-    # print(json_data)
-    # return json_data
-    # Display the resulting image
-    # while True:
-    #     cv2.imshow('Video', img)
-    #     if cv2.waitKey(1) & 0xFF == ord('q'):
-    #         return  json_data
+    print(json_data)
     return json_data
 
 
