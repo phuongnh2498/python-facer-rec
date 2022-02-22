@@ -1,7 +1,6 @@
 # SDK initialization
 
 from imagekitio import ImageKit
-from sqlalchemy import null
 
 imagekit = ImageKit(
     private_key='private_+MCQvPYe1/AsieTiSEtjkTkwx2I=',

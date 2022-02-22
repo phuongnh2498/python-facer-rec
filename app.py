@@ -7,7 +7,6 @@ import io
 import PIL.Image as Image
 import os
 from flask_cors import CORS
-from sqlalchemy import true
 from face_db_firebase import addNewModel, deleteModelByImageID, getModelByFolder, getModelByFolderForMobile
 from face_rec import classify_face, check_unknown_image_encoded, get_encoded_face, uniquify, deleteFromTrainFolder, getImgFromTrainFolder
 from imagekit import deleteImageByID, uploadImage
