@@ -47,7 +47,6 @@ def check_unknown_image_encoded(im=None):
     if im == []:
         im = []
     img = cv2.imdecode(im, 1)
-    img = resizeImage(img)
     encoding = True if len(fr.face_locations(img)) > 0 else False
 
     return encoding
@@ -55,8 +54,7 @@ def check_unknown_image_encoded(im=None):
 
 def classify_face(im, tolerance=0.6, faces_model={}):
     print("decoding...")
-    img = cv2.imdecode(im,  cv2.IMREAD_UNCHANGED)
-    # img = resizeImage(img)
+    img = cv2.imdecode(im,  1)
     #img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
     print("getting faces...")
     face_locations = fr.face_locations(img)
@@ -89,23 +87,6 @@ def classify_face(im, tolerance=0.6, faces_model={}):
     return json_data
 
 
-def resizeImage(img):
-    height, width = img.shape[:2]
-    max_height = 900
-    max_width = 600
-
-    # only shrink if img is bigger than required
-    if max_height < height or max_width < width:
-        # get scaling factor
-        scaling_factor = max_height / float(height)
-        if max_width/float(width) < scaling_factor:
-            scaling_factor = max_width / float(width)
-        # resize image
-        img = cv2.resize(img, None, fx=scaling_factor,
-                         fy=scaling_factor, interpolation=cv2.INTER_AREA)
-    return img
-
-
 def uniquify(path):
     filename, extension = os.path.splitext(path)
     counter = 1
@@ -115,42 +96,6 @@ def uniquify(path):
         counter += 1
 
     return path
-
-
-def deleteFromTrainFolder(classID="ALL", userID="", imgName=""):
-    count = 0
-    try:
-        folder = "./model_faces/"+classID
-        if(not os.path.exists(folder)):
-            return count
-        if imgName:
-            os.remove(os.path.join(folder, imgName))
-            return 1
-        for subdir, dirs, files in os.walk(folder):
-            for file in files:
-                if(userID in file):
-                    count += 1
-                    os.remove(os.path.join(subdir, file))
-        return count
-    except:
-        print("some thing gone wrong")
-    return 0
-
-
-def getImgFromTrainFolder(classID="ALL", userID=""):
-    folder = "./model_faces/"+classID
-    imgList = []
-    if(not os.path.exists(folder)):
-        return json.dumps(imgList)
-    for subdir, dirs, files in os.walk(folder):
-        for file in files:
-            if(userID in file):
-                with open(os.path.join(subdir, file), "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read())
-                    tempData = dict(
-                        {"imgName": str(file), "imgbase64": str(encoded_string)})
-                    imgList.append(tempData)
-    return json.dumps(imgList, indent=1)
 
 
 def getRecognitionData(face_locations=list([]), face_names=list([])):

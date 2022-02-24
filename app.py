@@ -96,7 +96,7 @@ def processRecognizeImage():
 
     # get faces from firebase
     face_dict = getModelByFolder(folder=content['image_folder'].upper())
-    npimg = np.fromstring(request.files['image_file'].read(), np.uint8)
+    npimg = np.frombuffer(request.files['image_file'].read(), np.uint8)
 
     return classify_face(npimg, tolerance=tolerance, faces_model=face_dict)
 
