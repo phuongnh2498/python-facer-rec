@@ -8,7 +8,7 @@ import PIL.Image as Image
 import os
 from flask_cors import CORS
 from face_db_firebase import addNewModel, deleteModelByImageID, getModelByFolder, getModelByFolderForMobile
-from face_rec import classify_face, check_unknown_image_encoded, get_encoded_face, uniquify, deleteFromTrainFolder, getImgFromTrainFolder
+from face_rec import classify_face, check_unknown_image_encoded, get_encoded_face
 from imagekit import deleteImageByID, uploadImage
 # Post Folder
 UPLOAD_FOLDER = 'model_faces/ALL'
