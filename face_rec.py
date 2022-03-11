@@ -48,7 +48,7 @@ def check_unknown_image_encoded(im=None):
         im = []
     img = cv2.imdecode(im, 1)
     encoding = True if len(fr.face_locations(img)) > 0 else False
-
+    print("check if image in "+encoding)
     return encoding
 
 
