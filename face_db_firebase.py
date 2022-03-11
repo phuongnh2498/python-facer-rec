@@ -12,6 +12,16 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 face_model_collection = db.collection('face_models_collection')
+token_collection = db.collection('token_collection')
+
+
+def getAuthToken():
+    print("getting auth token!")
+    listStr_Token = []
+    auth_list = token_collection.get()
+    for item in auth_list:
+        listStr_Token.append(item.to_dict()['auth_token'])
+    return listStr_Token
 
 
 def addNewModel(encoded_face_arr=[], face_name="test--xyz", folder="test", image_url="test.com", image_id="abc123"):

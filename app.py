@@ -7,9 +7,12 @@ import io
 import PIL.Image as Image
 import os
 from flask_cors import CORS
-from face_db_firebase import addNewModel, deleteModelByImageID, getModelByFolder, getModelByFolderForMobile
+from face_db_firebase import getAuthToken, addNewModel, deleteModelByImageID, getModelByFolder, getModelByFolderForMobile
 from face_rec import classify_face, check_unknown_image_encoded, get_encoded_face
 from imagekit import deleteImageByID, uploadImage
+from functools import wraps
+
+
 # Post Folder
 UPLOAD_FOLDER = 'model_faces/ALL'
 
@@ -20,12 +23,29 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 CORS(app)
 
 
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'x-access-tokens' in request.headers:
+            token = request.headers['x-access-tokens']
+        if not token:
+            return jsonify({'message': 'token is missing'})
+        ls_auth = getAuthToken()
+        if token in ls_auth:
+            return f(*args, **kwargs)
+        return jsonify({'message': 'token is not valid'})
+    return decorated
+
+
 @app.route('/', methods=['GET'])
+@token_required
 def get():
     return jsonify({'msg': 'Hello World'})
 
 
 @app.route('/delete-user-train-image', methods=['POST'])
+@token_required
 def deleteImage():
     content = request.json
     image_id = content['image_id']
@@ -39,6 +59,7 @@ def deleteImage():
 
 
 @app.route('/user-train-image', methods=['POST', 'GET'])
+@token_required
 def user_train_image():
     if request.method == "POST":
         content = dict(request.form)
@@ -84,6 +105,7 @@ def user_train_image():
 
 
 @ app.route('/recongize-user-image', methods=['POST'])
+@token_required
 def processRecognizeImage():
     content = dict(request.form)
     tolerance = 0.6
