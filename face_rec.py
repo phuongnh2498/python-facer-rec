@@ -11,8 +11,13 @@ TRAIN_ALL_FOLDER = "./model_faces/ALL/"
 
 
 def get_encoded_face(image_file=None):
-    face = fr.load_image_file(image_file)
-    encoding = fr.face_encodings(face)[0]
+    face = None
+    encoding = None
+    try:
+        face = fr.load_image_file(image_file)
+        encoding = fr.face_encodings(face)[0]
+    except:
+        print("err")
     return encoding
 
 
@@ -27,28 +32,32 @@ def get_encoded_faces(classID="ALL"):
     pathToGetEncoded = "./model_faces/"+classID+"/"
     if(not os.path.exists(pathToGetEncoded)):
         pathToGetEncoded = TRAIN_ALL_FOLDER
-
-    for dirpath, dnames, fnames in os.walk(pathToGetEncoded):
-        for f in fnames:
-            if f.endswith(".jpg") or f.endswith(".png"):
-                print("loading image file...")
-                face = fr.load_image_file(pathToGetEncoded + f)
-                print("encoding image file...")
-                encoding = fr.face_encodings(face)[0]
-                print("Finish 1 image file...")
-                encoded[f.split(".")[0]] = encoding
-    print(encoded)
+    try:
+        for dirpath, dnames, fnames in os.walk(pathToGetEncoded):
+            for f in fnames:
+                if f.endswith(".jpg") or f.endswith(".png"):
+                    print("loading image file...")
+                    face = fr.load_image_file(pathToGetEncoded + f)
+                    print("encoding image file...")
+                    encoding = fr.face_encodings(face)[0]
+                    print("Finish 1 image file...")
+                    encoded[f.split(".")[0]] = encoding
+    except:
+        print(encoded)
     return encoded
 
 
 def check_unknown_image_encoded(im=None):
     print("im")
     print(im)
+    encoding = []
     if im == []:
         im = []
-    img = cv2.imdecode(im, 1)
-    encoding = True if len(fr.face_locations(img)) > 0 else False
-    print("check if image in "+encoding)
+    try:
+        img = cv2.imdecode(im, 1)
+        encoding = True if len(fr.face_locations(img)) > 0 else False
+    except:
+        print(encoding)
     return encoding
 
 
