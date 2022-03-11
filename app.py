@@ -72,11 +72,16 @@ def user_train_image():
             return jsonify({'msg': 'please enter user_id'})
 
         image_file = request.files['image_file']
+        print("user post image_file:")
+        print(image_file)
         user_id = str(content['user_id']).replace("/", "").upper()
         image_folder = str(content['image_folder']).replace("/", "").upper()
         # check if face in image
         npimg = np.frombuffer(image_file.read(), np.uint8)
-        if not check_unknown_image_encoded(npimg):
+        try:
+            if not check_unknown_image_encoded(npimg):
+                return jsonify({'msg': "can't detect face in image"})
+        except:
             return jsonify({'msg': "can't detect face in image"})
         # upload imagekit
         res_imgkit = uploadImage(imageFile=io.BytesIO(npimg),
