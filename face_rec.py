@@ -50,7 +50,7 @@ def get_encoded_faces(classID="ALL"):
 def check_unknown_image_encoded(im=None):
     print("im")
     print(im)
-    encoding = []
+    encoding = False
     if im == []:
         im = []
     try:
