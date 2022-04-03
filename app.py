@@ -7,7 +7,7 @@ import io
 import PIL.Image as Image
 import os
 from flask_cors import CORS
-from face_db_firebase import getAuthToken, addNewModel, deleteModelByImageID, getModelByFolder, getModelByFolderForMobile
+from face_db_firebase import getAuthToken,IfFaceMatchesLastOne, addNewModel, deleteModelByImageID, getModelByFolder, getModelByFolderForMobile
 from face_rec import classify_face, check_unknown_image_encoded, get_encoded_face
 from imagekit import deleteImageByID, uploadImage
 from functools import wraps
@@ -83,6 +83,13 @@ def user_train_image():
                 return jsonify({'msg': "can't detect face in image"})
         except:
             return jsonify({'msg': "can't detect face in image"})
+
+        # get encoded face arr
+        encoded_arr = get_encoded_face(image_file=io.BytesIO(npimg))
+        
+        if not IfFaceMatchesLastOne(user_id,encoded_arr):
+            return jsonify({'msg': "face must be matches with the first face"})
+
         # upload imagekit
         res_imgkit = uploadImage(imageFile=io.BytesIO(npimg),
                                  imageName=user_id,
@@ -90,8 +97,7 @@ def user_train_image():
         # fetch response imagekit
         model_face_name = user_id+"--"+res_imgkit['fileId']
         model_image_url = res_imgkit['thumbnailUrl']
-        # get encoded face arr
-        encoded_arr = get_encoded_face(image_file=io.BytesIO(npimg))
+
         # post to firebase
         fire_res = addNewModel(encoded_face_arr=encoded_arr,
                                face_name=model_face_name,

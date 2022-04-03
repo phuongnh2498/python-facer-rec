@@ -20,6 +20,9 @@ def get_encoded_face(image_file=None):
         print("err")
     return encoding
 
+def compare_face(faces_encoded,face_encoding,tolerance):
+    return fr.compare_faces(
+        faces_encoded, face_encoding, tolerance=tolerance)
 
 def get_encoded_faces(classID="ALL"):
     """

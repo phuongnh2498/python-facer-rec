@@ -5,6 +5,7 @@ from firebase_admin import firestore
 import numpy as np
 import pickle
 from datetime import date
+from face_rec import compare_face
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
@@ -74,3 +75,11 @@ def deleteModelByImageID(image_id="abc123"):
     if len(doc_to_delete) <= 0:
         return False
     return face_model_collection.document(doc_to_delete[0].id).delete()
+
+# check if face matches last one
+def IfFaceMatchesLastOne(user_id,face_encoding):
+    encoded_faces = getModelByFolder(folder=user_id)
+    compare_result = compare_face(list(encoded_faces.values()),face_encoding,0.6)
+    print("matches:")
+    print(compare_result)
+    return True in compare_result 
