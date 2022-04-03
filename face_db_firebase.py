@@ -79,6 +79,8 @@ def deleteModelByImageID(image_id="abc123"):
 # check if face matches last one
 def IfFaceMatchesLastOne(user_id,face_encoding):
     encoded_faces = getModelByFolder(folder=user_id)
+    if len(encoded_faces)<=0:
+        return True
     compare_result = compare_face(list(encoded_faces.values()),face_encoding,0.6)
     print("matches:")
     print(compare_result)
