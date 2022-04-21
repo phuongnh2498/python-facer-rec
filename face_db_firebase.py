@@ -81,7 +81,7 @@ def IfFaceMatchesLastOne(user_id,face_encoding):
     encoded_faces = getModelByFolder(folder=user_id)
     if len(encoded_faces)<=0:
         return True
-    compare_result = compare_face(list(encoded_faces.values()),face_encoding,0.6)
+    compare_result = compare_face(list(encoded_faces.values()),face_encoding,0.5)
     print("matches:")
     print(compare_result)
     return True in compare_result 
